@@ -1,0 +1,53 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+# C extensions
+*.so
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+*.env
+*.venv
+# Distribution / packaging
+build/
+dist/
+.eggs/
+*.egg-info/
+.installed.cfg
+# PyInstaller
+*.manifest
+*.spec
+# Unit test / coverage reports
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+# Jupyter Notebook
+.ipynb_checkpoints
+# Logs
+*.log
+logs/
+log/
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*.DS_Store
+
+.mypy_cache/
+.pytype/
+.pyright/
+# FastAPI / Uvicorn
+*.db-journal
+# SQLite databases (如果你想把本地调试的 db 排除在仓库外)
+*.sqlite3
+*.db
+# Render / deployment 临时文件
