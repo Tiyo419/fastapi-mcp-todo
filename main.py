@@ -105,6 +105,6 @@ def delete_todo(todo_id: int, db: Session = Depends(get_db)):
 
 #if __name__ == "__main__":
 #    import uvicorn
-    mcp = FastApiMCP(app, include_operations=["get_all_todos", "getTodo", "createTodo", "updateTodo", "deleteTodo"])
-    mcp.mount()
+mcp = FastApiMCP(app, include_operations=["get_all_todos", "getTodo", "createTodo", "updateTodo", "deleteTodo"])
+mcp.mount()
 #    uvicorn.run(app, host="127.0.0.1", port=8000)
