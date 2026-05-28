@@ -2,8 +2,8 @@
 # This application provides a full CRUD API for managing tasks.
 # It uses SQLAlchemy for ORM and Pydantic for data validation.
 
-from fastapi import FastAPI, HTTPException, Depends
-from pydantic import BaseModel
+from fastapi import FastAPI, HTTPException, Depends, Path
+from pydantic import BaseModel, Field, field_validator
 from typing import List, Optional
 from sqlalchemy import create_engine, Column, Integer, String, Boolean
 from sqlalchemy.ext.declarative import declarative_base
@@ -28,11 +28,35 @@ Base.metadata.create_all(bind=engine)
 
 # --- Pydantic Schemas ---
 class TodoBase(BaseModel):
-    content: str
+    content: str = Field(min_length=1, max_length=500)
     completed: bool = False
+
+    @field_validator("content", mode="before")
+    @classmethod
+    def strip_content(cls, v: object) -> object:
+        if isinstance(v, str):
+            stripped = v.strip()
+            if not stripped:
+                raise ValueError("content must not be blank")
+            return stripped
+        return v
 
 class TodoCreate(TodoBase):
     pass
+
+class TodoUpdate(BaseModel):
+    content: Optional[str] = Field(default=None, min_length=1, max_length=500)
+    completed: Optional[bool] = None
+
+    @field_validator("content", mode="before")
+    @classmethod
+    def strip_content(cls, v: object) -> object:
+        if isinstance(v, str):
+            stripped = v.strip()
+            if not stripped:
+                raise ValueError("content must not be blank")
+            return stripped
+        return v
 
 class TodoResponse(TodoBase):
     todo_id: int
@@ -62,7 +86,7 @@ def get_all_todos(db: Session = Depends(get_db)):
     return db.query(TodoModel).all()
 
 @app.get("/todos/{todo_id}", operation_id="getTodo", response_model=TodoResponse)
-def get_todo(todo_id: int, db: Session = Depends(get_db)):
+def get_todo(todo_id: int = Path(gt=0), db: Session = Depends(get_db)):
     """Retrieve a specific todo by ID."""
     todo = db.query(TodoModel).filter(TodoModel.todo_id == todo_id).first()
     if not todo:
@@ -79,20 +103,24 @@ def add_todo(todo: TodoCreate, db: Session = Depends(get_db)):
     return db_todo
 
 @app.put("/todos/{todo_id}", operation_id="updateTodo", response_model=TodoResponse)
-def update_todo(todo_id: int, updated_todo: TodoCreate, db: Session = Depends(get_db)):
+def update_todo(updated_todo: TodoUpdate, todo_id: int = Path(gt=0), db: Session = Depends(get_db)):
     """Update an existing todo item."""
     db_todo = db.query(TodoModel).filter(TodoModel.todo_id == todo_id).first()
     if not db_todo:
         raise HTTPException(status_code=404, detail="Todo not found")
-    
-    db_todo.content = updated_todo.content
-    db_todo.completed = updated_todo.completed
+
+    updates = updated_todo.model_dump(exclude_unset=True)
+    if not updates:
+        raise HTTPException(status_code=422, detail="No fields provided for update")
+
+    for field, value in updates.items():
+        setattr(db_todo, field, value)
     db.commit()
     db.refresh(db_todo)
     return db_todo
 
-@app.delete("/todos/{todo_id}", operation_id="deleteTodo", status_code=204)
-def delete_todo(todo_id: int, db: Session = Depends(get_db)):
+@app.delete("/todos/{todo_id}", operation_id="deleteTodo", status_code=204, response_model=None)
+def delete_todo(todo_id: int = Path(gt=0), db: Session = Depends(get_db)):
     """Delete a todo item."""
     db_todo = db.query(TodoModel).filter(TodoModel.todo_id == todo_id).first()
     if not db_todo:
